@@ -5,8 +5,53 @@ const { authenticateToken, authorizeRoles, auditLog } = require('./middleware.js
 
 const router = express.Router();
 
+// IMMEDIATE DEBUG - This should always log
+console.log('🚀 CRUD API Router module loaded at:', new Date().toISOString());
+
+// Add debugging middleware to see all requests to this router
+router.use((req, res, next) => {
+  console.log('🔍 CRUD Router middleware hit:', req.method, req.path, 'Original URL:', req.originalUrl);
+  next();
+});
+
+// Test route to verify router is working
+router.get('/test', (req, res) => {
+  console.log('🧪 Test route hit!');
+  res.json({ message: 'CRUD API router is working!', timestamp: new Date().toISOString() });
+});
+
+// Simple health check without auth
+router.get('/health', (req, res) => {
+  console.log('❤️ Health check hit!');
+  res.json({ status: 'healthy', message: 'CRUD router is responding' });
+});
+
+// Test POST route without auth for debugging
+router.post('/test-post', (req, res) => {
+  console.log('🧪 Test POST route hit with body:', req.body);
+  res.json({ message: 'POST test successful', receivedData: req.body });
+});
+
+// Test contacts route without auth for debugging
+router.get('/contacts-test', async (req, res) => {
+  console.log('🧪 Contacts test route hit!');
+  try {
+    const result = await pool.query('SELECT COUNT(*) as count FROM contacts');
+    res.json({ 
+      message: 'Contacts test successful!', 
+      contactCount: result.rows[0].count 
+    });
+  } catch (error) {
+    console.error('❌ Contacts test error:', error);
+    res.status(500).json({ error: 'Database error', details: error.message });
+  }
+});
+
 // Apply authentication to all routes
-router.use(authenticateToken);
+router.use((req, res, next) => {
+  console.log('🔐 Auth middleware hit for:', req.method, req.path);
+  authenticateToken(req, res, next);
+});
 
 // Validation schema
 const companySchema = Joi.object({
@@ -23,316 +68,56 @@ const companySchema = Joi.object({
   country: Joi.string().max(100).allow('').optional()
 });
 
-// Get all companies with pagination and search
-router.get('/', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 per page
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
-    const industry = req.query.industry || '';
+// ============================================
+// CUSTOMERS/CONTACTS CRUD OPERATIONS  
+// ============================================
 
-    let query = `
-      SELECT c.*, 
-             COUNT(co.id) as contact_count,
-             COUNT(d.id) as deal_count,
-             COALESCE(SUM(d.value), 0) as total_deal_value
-      FROM companies c
-      LEFT JOIN contacts co ON c.id = co.company_id
-      LEFT JOIN deals d ON c.id = d.company_id AND d.status = 'open'
-    `;
-
-    const params = [];
-    const conditions = [];
-
-    if (search) {
-      conditions.push(`c.name ILIKE $${params.length + 1}`);
-      params.push(`%${search}%`);
-    }
-
-    if (industry) {
-      conditions.push(`c.industry = $${params.length + 1}`);
-      params.push(industry);
-    }
-
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
-    }
-
-    query += `
-      GROUP BY c.id
-      ORDER BY c.created_at DESC
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
-
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-
-    // Get total count for pagination
-    let countQuery = 'SELECT COUNT(*) FROM companies c';
-    const countParams = [];
-
-    if (conditions.length > 0) {
-      countQuery += ` WHERE ${conditions.join(' AND ')}`;
-      countParams.push(...params.slice(0, params.length - 2)); // Remove limit and offset
-    }
-
-    const countResult = await pool.query(countQuery, countParams);
-    const totalCount = parseInt(countResult.rows[0].count);
-    const totalPages = Math.ceil(totalCount / limit);
-
-    res.json({
-      companies: result.rows,
-      pagination: {
-        current_page: page,
-        total_pages: totalPages,
-        total_count: totalCount,
-        limit
-      }
-    });
-  } catch (error) {
-    console.error('Get companies error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
-  }
+// Alias routes for customers (mapping to contacts)
+router.get('/customers', async (req, res) => {
+  console.log('🔄 Redirecting /customers to /contacts');
+  req.url = '/contacts';
+  return router.handle(req, res);
 });
 
-// Get single company by ID
-router.get('/:id', async (req, res) => {
+router.post('/customers', auditLog('CREATE', 'contacts'), async (req, res) => {
+  console.log('📝 POST /customers route hit (redirecting to contacts logic)');
+  console.log('📝 Request body:', req.body);
+  
   try {
-    const companyId = parseInt(req.params.id);
-    
-    if (isNaN(companyId)) {
-      return res.status(400).json({
-        error: 'Invalid company ID'
-      });
-    }
-
-    const result = await pool.query(`
-      SELECT c.*,
-             json_agg(
-               DISTINCT jsonb_build_object(
-                 'id', co.id,
-                 'first_name', co.first_name,
-                 'last_name', co.last_name,
-                 'email', co.email,
-                 'phone', co.phone,
-                 'job_title', co.job_title,
-                 'is_primary', co.is_primary
-               )
-             ) FILTER (WHERE co.id IS NOT NULL) as contacts,
-             json_agg(
-               DISTINCT jsonb_build_object(
-                 'id', d.id,
-                 'title', d.title,
-                 'value', d.value,
-                 'status', d.status,
-                 'stage', ps.name,
-                 'probability', d.probability,
-                 'expected_close_date', d.expected_close_date
-               )
-             ) FILTER (WHERE d.id IS NOT NULL) as deals
-      FROM companies c
-      LEFT JOIN contacts co ON c.id = co.company_id
-      LEFT JOIN deals d ON c.id = d.company_id
-      LEFT JOIN pipeline_stages ps ON d.pipeline_stage_id = ps.id
-      WHERE c.id = $1
-      GROUP BY c.id
-    `, [companyId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Company not found'
-      });
-    }
-
-    res.json({
-      company: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Get company error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
-  }
-});
-
-// Create new company
-router.post('/', auditLog('CREATE', 'companies'), async (req, res) => {
-  try {
-    const { error, value } = companySchema.validate(req.body);
+    const { error, value } = contactSchema.validate(req.body);
     if (error) {
+      console.log('❌ Validation error:', error.details[0].message);
       return res.status(400).json({
         error: 'Validation Error',
         details: error.details[0].message
       });
     }
-
-    // Check for duplicate company name
-    const existingCompany = await pool.query(
-      'SELECT id FROM companies WHERE LOWER(name) = LOWER($1)',
-      [value.name]
-    );
-
-    if (existingCompany.rows.length > 0) {
-      return res.status(409).json({
-        error: 'Company with this name already exists'
-      });
-    }
+    
+    console.log('✅ Validation passed, creating customer/contact with data:', value);
 
     const columns = Object.keys(value);
     const values = Object.values(value);
     const placeholders = values.map((_, index) => `$${index + 1}`);
 
     const query = `
-      INSERT INTO companies (${columns.join(', ')})
+      INSERT INTO contacts (${columns.join(', ')})
       VALUES (${placeholders.join(', ')})
       RETURNING *
     `;
 
+    console.log('🔍 Executing create customer query:', query, 'with values:', values);
     const result = await pool.query(query, values);
 
+    console.log('✅ Customer/contact created successfully:', result.rows[0]);
     res.status(201).json({
-      message: 'Company created successfully',
-      company: result.rows[0]
+      message: 'Customer created successfully',
+      customer: result.rows[0]
     });
   } catch (error) {
-    console.error('Create company error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
+    console.error('❌ Create customer error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
-
-// Update company
-router.put('/:id', auditLog('UPDATE', 'companies'), async (req, res) => {
-  try {
-    const companyId = parseInt(req.params.id);
-    
-    if (isNaN(companyId)) {
-      return res.status(400).json({
-        error: 'Invalid company ID'
-      });
-    }
-
-    const { error, value } = companySchema.validate(req.body, { allowUnknown: false });
-    if (error) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        details: error.details[0].message
-      });
-    }
-
-    // Check if company exists
-    const existingCompany = await pool.query(
-      'SELECT id FROM companies WHERE id = $1',
-      [companyId]
-    );
-
-    if (existingCompany.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Company not found'
-      });
-    }
-
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
-
-    Object.entries(value).forEach(([key, val]) => {
-      if (val !== undefined) {
-        updates.push(`${key} = $${paramIndex}`);
-        values.push(val);
-        paramIndex++;
-      }
-    });
-
-    if (updates.length === 0) {
-      return res.status(400).json({
-        error: 'No valid fields to update'
-      });
-    }
-
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(companyId);
-
-    const query = `
-      UPDATE companies 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, values);
-
-    res.json({
-      message: 'Company updated successfully',
-      company: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Update company error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
-  }
-});
-
-// Delete company
-router.delete('/:id', authorizeRoles('admin', 'manager'), auditLog('DELETE', 'companies'), async (req, res) => {
-  try {
-    const companyId = parseInt(req.params.id);
-    
-    if (isNaN(companyId)) {
-      return res.status(400).json({
-        error: 'Invalid company ID'
-      });
-    }
-
-    // Check if company has related data
-    const relatedData = await pool.query(`
-      SELECT 
-        (SELECT COUNT(*) FROM contacts WHERE company_id = $1) as contact_count,
-        (SELECT COUNT(*) FROM deals WHERE company_id = $1) as deal_count
-    `, [companyId]);
-
-    const { contact_count, deal_count } = relatedData.rows[0];
-
-    if (parseInt(contact_count) > 0 || parseInt(deal_count) > 0) {
-      return res.status(409).json({
-        error: 'Cannot delete company with existing contacts or deals',
-        details: {
-          contacts: parseInt(contact_count),
-          deals: parseInt(deal_count)
-        }
-      });
-    }
-
-    const result = await pool.query(
-      'DELETE FROM companies WHERE id = $1 RETURNING *',
-      [companyId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Company not found'
-      });
-    }
-
-    res.json({
-      message: 'Company deleted successfully',
-      company: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Delete company error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
-  }
-});
-
-// ...existing companies code...
 
 // ============================================
 // CONTACTS CRUD OPERATIONS  
@@ -340,7 +125,7 @@ router.delete('/:id', authorizeRoles('admin', 'manager'), auditLog('DELETE', 'co
 
 // Validation schema for contacts
 const contactSchema = Joi.object({
-  company_id: Joi.number().integer().positive().required(),
+  company_id: Joi.number().integer().positive().allow(null).optional(),
   first_name: Joi.string().min(2).max(100).required(),
   last_name: Joi.string().min(2).max(100).required(),
   email: Joi.string().email().allow('').optional(),
@@ -352,6 +137,7 @@ const contactSchema = Joi.object({
 
 // Get all contacts
 router.get('/contacts', async (req, res) => {
+  console.log('🔍 GET /contacts route hit with query:', req.query);
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
@@ -390,129 +176,48 @@ router.get('/contacts', async (req, res) => {
     `;
 
     params.push(limit, offset);
+    console.log('🔍 Executing contacts query:', query, 'with params:', params);
     const result = await pool.query(query, params);
+    console.log('📊 Raw contact data from database:', result.rows);
 
-    res.json({
+    // Get total count for pagination
+    let countQuery = 'SELECT COUNT(*) FROM contacts ct LEFT JOIN companies c ON ct.company_id = c.id';
+    const countParams = [];
+
+    if (conditions.length > 0) {
+      countQuery += ` WHERE ${conditions.join(' AND ')}`;
+      countParams.push(...params.slice(0, params.length - 2)); // Remove limit and offset
+    }
+
+    console.log('🔍 Executing count query:', countQuery, 'with params:', countParams);
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    const response = {
       contacts: result.rows,
       pagination: {
         current_page: page,
-        total_pages: Math.ceil(result.rows.length / limit),
-        total_count: result.rows.length,
+        total_pages: totalPages,
+        total_count: totalCount,
         limit
       }
+    };
+    
+    console.log('📊 Contacts response:', {
+      contactCount: result.rows.length,
+      totalCount,
+      totalPages,
+      currentPage: page,
+      sampleContact: result.rows[0] || 'No contacts found'
     });
+    
+    res.json(response);
   } catch (error) {
-    console.error('Get contacts error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Get contacts error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
-
-// Create contact
-router.post('/contacts', auditLog('CREATE', 'contacts'), async (req, res) => {
-  try {
-    const { error, value } = contactSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        details: error.details[0].message
-      });
-    }
-
-    const columns = Object.keys(value);
-    const values = Object.values(value);
-    const placeholders = values.map((_, index) => `$${index + 1}`);
-
-    const query = `
-      INSERT INTO contacts (${columns.join(', ')})
-      VALUES (${placeholders.join(', ')})
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, values);
-
-    res.status(201).json({
-      message: 'Contact created successfully',
-      contact: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Create contact error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ============================================
-// DEALS CRUD OPERATIONS
-// ============================================
-
-const dealSchema = Joi.object({
-  title: Joi.string().min(2).max(255).required(),
-  company_id: Joi.number().integer().positive().required(),
-  contact_id: Joi.number().integer().positive().optional(),
-  assigned_user_id: Joi.number().integer().positive().optional(),
-  pipeline_stage_id: Joi.number().integer().positive().required(),
-  value: Joi.number().positive().allow(null).optional(),
-  currency: Joi.string().length(3).default('USD'),
-  expected_close_date: Joi.date().optional(),
-  probability: Joi.number().min(0).max(1).optional(),
-  description: Joi.string().allow('').optional()
-});
-
-// Get all deals
-router.get('/deals', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT d.*, 
-             c.name as company_name,
-             ps.name as stage_name,
-             u.first_name || ' ' || u.last_name as assigned_user_name
-      FROM deals d
-      LEFT JOIN companies c ON d.company_id = c.id
-      LEFT JOIN pipeline_stages ps ON d.pipeline_stage_id = ps.id
-      LEFT JOIN users u ON d.assigned_user_id = u.id
-      ORDER BY d.created_at DESC
-    `);
-
-    res.json({ deals: result.rows });
-  } catch (error) {
-    console.error('Get deals error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create deal
-router.post('/deals', auditLog('CREATE', 'deals'), async (req, res) => {
-  try {
-    const { error, value } = dealSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        details: error.details[0].message
-      });
-    }
-
-    const columns = Object.keys(value);
-    const values = Object.values(value);
-    const placeholders = values.map((_, index) => `$${index + 1}`);
-
-    const query = `
-      INSERT INTO deals (${columns.join(', ')})
-      VALUES (${placeholders.join(', ')})
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, values);
-
-    res.status(201).json({
-      message: 'Deal created successfully',
-      deal: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Create deal error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ...existing code above...
 
 // Get single contact by ID
 router.get('/contacts/:id', async (req, res) => {
@@ -549,6 +254,45 @@ router.get('/contacts/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error'
     });
+  }
+});
+
+// Create contact
+router.post('/contacts', auditLog('CREATE', 'contacts'), async (req, res) => {
+  console.log('📝 POST /contacts route hit with body:', req.body);
+  try {
+    const { error, value } = contactSchema.validate(req.body);
+    if (error) {
+      console.log('❌ Validation error:', error.details[0].message);
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: error.details[0].message
+      });
+    }
+    
+    console.log('✅ Validation passed, creating contact with data:', value);
+
+    const columns = Object.keys(value);
+    const values = Object.values(value);
+    const placeholders = values.map((_, index) => `$${index + 1}`);
+
+    const query = `
+      INSERT INTO contacts (${columns.join(', ')})
+      VALUES (${placeholders.join(', ')})
+      RETURNING *
+    `;
+
+    console.log('🔍 Executing create contact query:', query, 'with values:', values);
+    const result = await pool.query(query, values);
+
+    console.log('✅ Contact created successfully:', result.rows[0]);
+    res.status(201).json({
+      message: 'Contact created successfully',
+      contact: result.rows[0]
+    });
+  } catch (error) {
+    console.error('❌ Create contact error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -659,6 +403,45 @@ router.delete('/contacts/:id', authorizeRoles('admin', 'manager'), auditLog('DEL
   }
 });
 
+// ============================================
+// DEALS CRUD OPERATIONS
+// ============================================
+
+const dealSchema = Joi.object({
+  title: Joi.string().min(2).max(255).required(),
+  company_id: Joi.number().integer().positive().required(),
+  contact_id: Joi.number().integer().positive().optional(),
+  assigned_user_id: Joi.number().integer().positive().optional(),
+  pipeline_stage_id: Joi.number().integer().positive().required(),
+  value: Joi.number().positive().allow(null).optional(),
+  currency: Joi.string().length(3).default('USD'),
+  expected_close_date: Joi.date().optional(),
+  probability: Joi.number().min(0).max(1).optional(),
+  description: Joi.string().allow('').optional()
+});
+
+// Get all deals
+router.get('/deals', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*, 
+             c.name as company_name,
+             ps.name as stage_name,
+             u.first_name || ' ' || u.last_name as assigned_user_name
+      FROM deals d
+      LEFT JOIN companies c ON d.company_id = c.id
+      LEFT JOIN pipeline_stages ps ON d.pipeline_stage_id = ps.id
+      LEFT JOIN users u ON d.assigned_user_id = u.id
+      ORDER BY d.created_at DESC
+    `);
+
+    res.json({ deals: result.rows });
+  } catch (error) {
+    console.error('Get deals error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get single deal by ID
 router.get('/deals/:id', async (req, res) => {
   try {
@@ -701,6 +484,39 @@ router.get('/deals/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error'
     });
+  }
+});
+
+// Create deal
+router.post('/deals', auditLog('CREATE', 'deals'), async (req, res) => {
+  try {
+    const { error, value } = dealSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: error.details[0].message
+      });
+    }
+
+    const columns = Object.keys(value);
+    const values = Object.values(value);
+    const placeholders = values.map((_, index) => `$${index + 1}`);
+
+    const query = `
+      INSERT INTO deals (${columns.join(', ')})
+      VALUES (${placeholders.join(', ')})
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+
+    res.status(201).json({
+      message: 'Deal created successfully',
+      deal: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create deal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -884,6 +700,328 @@ router.post('/activities', auditLog('CREATE', 'activities'), async (req, res) =>
     console.error('Create activity error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// ============================================
+// COMPANIES CRUD OPERATIONS
+// ============================================
+
+// Get all companies with pagination and search
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 per page
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const industry = req.query.industry || '';
+
+    let query = `
+      SELECT c.*, 
+             COUNT(co.id) as contact_count,
+             COUNT(d.id) as deal_count,
+             COALESCE(SUM(d.value), 0) as total_deal_value
+      FROM companies c
+      LEFT JOIN contacts co ON c.id = co.company_id
+      LEFT JOIN deals d ON c.id = d.company_id AND d.status = 'open'
+    `;
+
+    const params = [];
+    const conditions = [];
+
+    if (search) {
+      conditions.push(`c.name ILIKE $${params.length + 1}`);
+      params.push(`%${search}%`);
+    }
+
+    if (industry) {
+      conditions.push(`c.industry = $${params.length + 1}`);
+      params.push(industry);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    query += `
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
+
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Get total count for pagination
+    let countQuery = 'SELECT COUNT(*) FROM companies c';
+    const countParams = [];
+
+    if (conditions.length > 0) {
+      countQuery += ` WHERE ${conditions.join(' AND ')}`;
+      countParams.push(...params.slice(0, params.length - 2)); // Remove limit and offset
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({
+      companies: result.rows,
+      pagination: {
+        current_page: page,
+        total_pages: totalPages,
+        total_count: totalCount,
+        limit
+      }
+    });
+  } catch (error) {
+    console.error('Get companies error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Get single company by ID (only match numeric IDs)
+router.get('/:id(\\d+)', async (req, res) => {
+  console.log('🏢 Company ID route hit with ID:', req.params.id);
+  try {
+    const companyId = parseInt(req.params.id);
+    
+    if (isNaN(companyId)) {
+      console.log('❌ Invalid company ID:', req.params.id);
+      return res.status(400).json({
+        error: 'Invalid company ID'
+      });
+    }
+
+    const result = await pool.query(`
+      SELECT c.*,
+             json_agg(
+               DISTINCT jsonb_build_object(
+                 'id', co.id,
+                 'first_name', co.first_name,
+                 'last_name', co.last_name,
+                 'email', co.email,
+                 'phone', co.phone,
+                 'job_title', co.job_title,
+                 'is_primary', co.is_primary
+               )
+             ) FILTER (WHERE co.id IS NOT NULL) as contacts,
+             json_agg(
+               DISTINCT jsonb_build_object(
+                 'id', d.id,
+                 'title', d.title,
+                 'value', d.value,
+                 'status', d.status,
+                 'stage', ps.name,
+                 'probability', d.probability,
+                 'expected_close_date', d.expected_close_date
+               )
+             ) FILTER (WHERE d.id IS NOT NULL) as deals
+      FROM companies c
+      LEFT JOIN contacts co ON c.id = co.company_id
+      LEFT JOIN deals d ON c.id = d.company_id
+      LEFT JOIN pipeline_stages ps ON d.pipeline_stage_id = ps.id
+      WHERE c.id = $1
+      GROUP BY c.id
+    `, [companyId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Company not found'
+      });
+    }
+
+    res.json({
+      company: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Get company error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Create new company
+router.post('/', auditLog('CREATE', 'companies'), async (req, res) => {
+  try {
+    const { error, value } = companySchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: error.details[0].message
+      });
+    }
+
+    // Check for duplicate company name
+    const existingCompany = await pool.query(
+      'SELECT id FROM companies WHERE LOWER(name) = LOWER($1)',
+      [value.name]
+    );
+
+    if (existingCompany.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Company with this name already exists'
+      });
+    }
+
+    const columns = Object.keys(value);
+    const values = Object.values(value);
+    const placeholders = values.map((_, index) => `$${index + 1}`);
+
+    const query = `
+      INSERT INTO companies (${columns.join(', ')})
+      VALUES (${placeholders.join(', ')})
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+
+    res.status(201).json({
+      message: 'Company created successfully',
+      company: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create company error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Update company
+router.put('/:id(\\d+)', auditLog('UPDATE', 'companies'), async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.id);
+    
+    if (isNaN(companyId)) {
+      return res.status(400).json({
+        error: 'Invalid company ID'
+      });
+    }
+
+    const { error, value } = companySchema.validate(req.body, { allowUnknown: false });
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: error.details[0].message
+      });
+    }
+
+    // Check if company exists
+    const existingCompany = await pool.query(
+      'SELECT id FROM companies WHERE id = $1',
+      [companyId]
+    );
+
+    if (existingCompany.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Company not found'
+      });
+    }
+
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    Object.entries(value).forEach(([key, val]) => {
+      if (val !== undefined) {
+        updates.push(`${key} = $${paramIndex}`);
+        values.push(val);
+        paramIndex++;
+      }
+    });
+
+    if (updates.length === 0) {
+      return res.status(400).json({
+        error: 'No valid fields to update'
+      });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(companyId);
+
+    const query = `
+      UPDATE companies 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+
+    res.json({
+      message: 'Company updated successfully',
+      company: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update company error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// Delete company
+router.delete('/:id(\\d+)', authorizeRoles('admin', 'manager'), auditLog('DELETE', 'companies'), async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.id);
+    
+    if (isNaN(companyId)) {
+      return res.status(400).json({
+        error: 'Invalid company ID'
+      });
+    }
+
+    // Check if company has related data
+    const relatedData = await pool.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM contacts WHERE company_id = $1) as contact_count,
+        (SELECT COUNT(*) FROM deals WHERE company_id = $1) as deal_count
+    `, [companyId]);
+
+    const { contact_count, deal_count } = relatedData.rows[0];
+
+    if (parseInt(contact_count) > 0 || parseInt(deal_count) > 0) {
+      return res.status(409).json({
+        error: 'Cannot delete company with existing contacts or deals',
+        details: {
+          contacts: parseInt(contact_count),
+          deals: parseInt(deal_count)
+        }
+      });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM companies WHERE id = $1 RETURNING *',
+      [companyId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Company not found'
+      });
+    }
+
+    res.json({
+      message: 'Company deleted successfully',
+      company: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Delete company error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+
+// Catch-all route for debugging - should be last
+router.use('*', (req, res) => {
+  console.log('🚨 CRUD Router catch-all hit:', req.method, req.originalUrl, 'Body:', req.body);
+  res.status(404).json({ error: 'Route not found in CRUD router', path: req.originalUrl, method: req.method });
 });
 
 module.exports = router;

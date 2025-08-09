@@ -72,10 +72,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, {
-    ip: req.ip,
-    userAgent: req.get('User-Agent')
-  });
+  // Log all POST requests immediately
+  if (req.method === 'POST') {
+    console.log('📮 POST REQUEST DETECTED:', req.method, req.path, 'Body:', req.body);
+  }
+  
+  const originalSend = res.send;
+  res.send = function(data) {
+    logger.info(`${req.method} ${req.path} - ${res.statusCode}`, {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      statusCode: res.statusCode
+    });
+    return originalSend.call(this, data);
+  };
   next();
 });
 
@@ -102,7 +112,10 @@ app.use('/api/audit', auditRoutes);
 console.log('✅ Audit routes registered');
 app.use('/api/health', healthRoutes);
 console.log('✅ Health routes registered');
-app.use('/api', crudRoutes);
+app.use('/api', (req, res, next) => {
+  console.log('🔍 CRUD Router hit:', req.method, req.path, 'Body:', req.method === 'POST' ? req.body : 'N/A');
+  next();
+}, crudRoutes);
 console.log('✅ CRUD routes registered');
 
 // Global error handler
@@ -124,7 +137,8 @@ app.use((error, req, res, next) => {
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  console.log('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
+  res.status(404).json({ error: 'Route not found', path: req.originalUrl, method: req.method });
 });
 
 // Only start the server if not running in test mode

@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const pool = require('./database.js');
@@ -15,13 +14,34 @@ const comparePassword = async (password, hash) => {
   return bcrypt.compare(password, hash);
 };
 
+// Generate JWT token - ADD THIS FUNCTION
+const generateToken = (userId, email, role) => {
+  const payload = {
+    userId: userId,
+    email: email,
+    role: role
+  };
+  
+  return jwt.sign(
+    payload,
+    process.env.JWT_SECRET,
+    { 
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+      issuer: 'salesbase-crm'
+    }
+  );
+};
+
 // Auth middleware - verify JWT token
 const authenticateToken = async (req, res, next) => {
+  console.log('🔐 Auth middleware called for:', req.method, req.path);
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    console.log('🔐 Auth header present:', !!authHeader, 'Token present:', !!token);
 
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(401).json({ 
         error: 'Access denied. No token provided.' 
       });
@@ -42,6 +62,7 @@ const authenticateToken = async (req, res, next) => {
     );
 
     if (userResult.rows.length === 0) {
+      console.log('❌ User not found for token');
       return res.status(401).json({ 
         error: 'Invalid token. User not found.' 
       });
@@ -50,12 +71,14 @@ const authenticateToken = async (req, res, next) => {
     const user = userResult.rows[0];
     
     if (!user.is_active) {
+      console.log('❌ User account is deactivated');
       return res.status(401).json({ 
         error: 'Account is deactivated.' 
       });
     }
 
     req.user = user;
+    console.log('✅ Authentication successful for user:', user.email);
     
     // Log successful authentication
     auditService.createLog({
@@ -69,7 +92,7 @@ const authenticateToken = async (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('❌ Auth middleware error:', error.message);
     res.status(403).json({ 
       error: 'Invalid or expired token.' 
     });
@@ -294,6 +317,7 @@ const auditLog = (action, entityType) => {
 module.exports = {
   hashPassword,
   comparePassword,
+  generateToken,        // ADD THIS LINE
   authenticateToken,
   authorizeRoles,
   authorizePermissions,
