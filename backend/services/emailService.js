@@ -9,7 +9,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const handlebars = require('handlebars');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../db');
+const pool = require('../database');
 
 // Email configuration
 const emailConfig = {

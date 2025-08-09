@@ -4,7 +4,7 @@
  * Provides a flexible reporting system with custom report templates,
  * scheduled report generation, and multiple export formats.
  */
-const pool = require('../db');
+const pool = require('../database');
 const ExcelJS = require('exceljs');
 const { Parser } = require('json2csv');
 const path = require('path');
