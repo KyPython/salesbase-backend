@@ -1,12 +1,11 @@
 const express = require('express');
 const Joi = require('joi');
 const pool = require('../database.js');
-const { 
-  generateToken, 
-  hashPassword, 
-  comparePassword,
-  authenticateToken 
-} from '../middleware.js';
+const middleware = require('../middleware.js');
+const generateToken = middleware.generateToken;
+const hashPassword = middleware.hashPassword;
+const comparePassword = middleware.comparePassword;
+const authenticateToken = middleware.authenticateToken;
 
 const router = express.Router();
 
