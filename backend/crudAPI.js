@@ -886,4 +886,4 @@ router.post('/activities', auditLog('CREATE', 'activities'), async (req, res) =>
   }
 });
 
-export default router;
+module.exports = router;
