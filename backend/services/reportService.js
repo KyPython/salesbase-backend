@@ -679,40 +679,6 @@ class ReportService {
   }
 }
 
-/**
- * Report Service Class
- * Handles report generation, scheduling, and delivery
- */
-class ReportService {
-  constructor() {
-    this.reportTypes = REPORT_TYPES;
-  }
-
-  /**
-   * Generate a report based on type and parameters
-   * @param {string} reportType - The type of report to generate
-   * @param {Object} filters - Filters to apply to the report
-   * @param {string} format - The output format (pdf, xlsx, csv)
-   * @returns {Promise<Object>} - The generated report data
-   */
-  async generateReport(reportType, filters = {}, format = 'pdf') {
-    // Implementation would go here
-    console.log(`Generating ${reportType} report in ${format} format with filters:`, filters);
-    return { success: true, reportType, format };
-  }
-
-  /**
-   * Schedule a report for recurring generation
-   * @param {Object} scheduleConfig - Configuration for the scheduled report
-   * @returns {Promise<Object>} - The created schedule
-   */
-  async scheduleReport(scheduleConfig) {
-    // Implementation would go here
-    console.log('Scheduling report with config:', scheduleConfig);
-    return { success: true, id: Math.floor(Math.random() * 1000) };
-  }
-}
-
 module.exports = {
   ReportService,
   REPORT_TYPES
