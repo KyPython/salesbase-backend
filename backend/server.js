@@ -5,6 +5,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const winston = require('winston');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const crudRoutes = require('./crudAPI');
 // Import report routes
@@ -24,20 +25,12 @@ dotenv.config();
 const app = express(); // Initialize app FIRST
 const PORT = process.env.PORT || 3001;
 
-const swaggerDocument = YAML.load('./swagger.yaml');
+// FIX: Use absolute path for swagger.yaml
+const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/integrations', integrationsRouter);
 
 app.use(rateLimit({ windowMs: 60000, max: 1000 }));
-
-dotenv.config();
-
-// Only start the server if not running in test mode
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
-  });
-}
 
 // Logger configuration
 const logger = winston.createLogger({
@@ -133,5 +126,12 @@ app.use((error, req, res, next) => {
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+// Only start the server if not running in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
