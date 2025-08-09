@@ -1,0 +1,18 @@
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:06:43.417Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:07:41.670Z"}
+{"ip":"::1","level":"info","message":"GET /health","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.509Z","userAgent":"curl/8.7.1"}
+{"ip":"::1","level":"info","message":"GET /api/companies","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.527Z","userAgent":"curl/8.7.1"}
+{"ip":"::1","level":"info","message":"GET /api/contacts","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.535Z","userAgent":"curl/8.7.1"}
+{"ip":"::1","level":"info","message":"GET /api/deals","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.542Z","userAgent":"curl/8.7.1"}
+{"ip":"::1","level":"info","message":"GET /api/activities","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.550Z","userAgent":"curl/8.7.1"}
+{"ip":"::1","level":"info","message":"GET /api/reports/dashboard","service":"salesbase-api","timestamp":"2025-08-06T08:08:04.558Z","userAgent":"curl/8.7.1"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:08:56.635Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:10:01.525Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:10:04.495Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:10:05.655Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:11:18.115Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:12:06.266Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:12:24.573Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:12:30.579Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:13:01.018Z"}
+{"level":"info","message":"🚀 SalesBase API server running on port 3001","service":"salesbase-api","timestamp":"2025-08-06T08:13:03.495Z"}
