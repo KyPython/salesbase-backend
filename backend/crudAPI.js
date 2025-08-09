@@ -1,7 +1,7 @@
-import express from 'express';
-import Joi from 'joi';
-import pool from './database.js'; // ✅ Fixed: should be './database.js' not '../database.js'
-import { authenticateToken, authorizeRoles, auditLog } from './middleware.js'; // ✅ Fixed: removed /auth
+const express = require('express');
+const Joi = require('joi');
+const pool = require('./database.js'); // ✅ Fixed: should be './database.js' not '../database.js'
+const { authenticateToken, authorizeRoles, auditLog } = require('./middleware.js'); // ✅ Fixed: removed /auth
 
 const router = express.Router();
 

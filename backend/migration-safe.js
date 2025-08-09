@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import pg from 'pg';
-import dotenv from 'dotenv';
+const fs = require('fs');
+const path = require('path');
+// fileURLToPath is only available in ES modules; for CommonJS, use __filename and __dirname
+const pg = require('pg');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
