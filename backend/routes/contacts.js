@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 const router = express.Router();
 
 // filepath: /Users/ky/Desktop/GitHub/VS_Code/SalesBase/backend/routes/contacts.js
@@ -29,4 +29,4 @@ router.delete('/:id', (req, res) => {
   res.json({ message: `Delete contact ${req.params.id} - coming soon` });
 });
 
-export default router;
+module.exports = router;

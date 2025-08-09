@@ -1,7 +1,7 @@
-import express from 'express';
-import Joi from 'joi';
-import pool from '../database.js';
-import { 
+const express = require('express');
+const Joi = require('joi');
+const pool = require('../database.js');
+const { 
   generateToken, 
   hashPassword, 
   comparePassword,
@@ -219,4 +219,4 @@ router.put('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

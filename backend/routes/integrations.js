@@ -1,5 +1,5 @@
 // filepath: /Users/ky/Desktop/GitHub/VS_Code/SalesBase/backend/routes/integrations.js
-import express from 'express';
+const express = require('express');
 const router = express.Router();
 
 // Example: Zapier webhook integration
@@ -21,4 +21,4 @@ router.get('/status', (req, res) => {
   res.json({ integrations: ['zapier', 'slack'], status: 'active' });
 });
 
-export default router;
+module.exports = router;

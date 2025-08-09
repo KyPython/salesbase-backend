@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 const router = express.Router();
 
 router.get('/dashboard', (req, res) => {
@@ -13,4 +13,4 @@ router.get('/revenue', (req, res) => {
   res.json({ message: 'Revenue report - coming soon' });
 });
 
-export default router;
+module.exports = router;

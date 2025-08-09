@@ -1,7 +1,7 @@
-import express from 'express';
-import Joi from 'joi';
-import pool from '../database.js';
-import { authenticateToken } from '../middleware.js';
+const express = require('express');
+const Joi = require('joi');
+const pool = require('../database.js');
+const { authenticateToken } = require('../middleware.js');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -423,4 +423,4 @@ router.get('/analytics', async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

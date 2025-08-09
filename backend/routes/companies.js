@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 const router = express.Router();
 
 // Placeholder CRUD routes
@@ -22,4 +22,4 @@ router.delete('/:id', (req, res) => {
   res.json({ message: `Delete company ${req.params.id} - coming soon` });
 });
 
-export default router;
+module.exports = router;
