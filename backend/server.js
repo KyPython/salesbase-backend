@@ -26,7 +26,7 @@ const app = express(); // Initialize app FIRST
 const PORT = process.env.PORT || 3001;
 
 // FIX: Use absolute path for swagger.yaml
-const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/integrations', integrationsRouter);
 
