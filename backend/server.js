@@ -1,4 +1,18 @@
 console.log(`Starting server on port ${PORT}`);
+console.log('Starting SalesBase API...');
+console.log('PORT:', process.env.PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('PGHOST:', process.env.PGHOST);
+console.log('PGPORT:', process.env.PGPORT);
+console.log('PGDATABASE:', process.env.PGDATABASE);
+console.log('PGUSER:', process.env.PGUSER);
+console.log('PGPASSWORD:', process.env.PGPASSWORD);
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_EXPIRES_IN:', process.env.JWT_EXPIRES_IN);
+console.log('RATE_LIMIT_WINDOW_MS:', process.env.RATE_LIMIT_WINDOW_MS);
+console.log('RATE_LIMIT_MAX_REQUESTS:', process.env.RATE_LIMIT_MAX_REQUESTS);
+console.log('LOG_LEVEL:', process.env.LOG_LEVEL);
 
 const express = require('express');
 const cors = require('cors');
