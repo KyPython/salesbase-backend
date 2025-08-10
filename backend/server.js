@@ -69,6 +69,11 @@ const allowedOrigins = [
   'https://salesbase-frontend-qhm9pz19v-kypythons-projects.vercel.app' // <-- Add this line
 ];
 
+app.use((req, res, next) => {
+  console.log('CORS Origin:', req.headers.origin);
+  next();
+});
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
