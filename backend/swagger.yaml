@@ -475,35 +475,50 @@ components:
   schemas:
     Contact:
       type: object
+      required:
+        - id
+        - first_name
+        - last_name
+        - email
       properties:
         id:
           type: integer
         first_name:
           type: string
         last_name:
-          type: string
-        email:
-          type: string
-        company_name:
-          type: string
     Company:
       type: object
+      required:
+        - id
+        - name
       properties:
         id:
           type: integer
         name:
           type: string
         industry:
-          type: string
-        website:
-          type: string
     Deal:
       type: object
+      required:
+        - id
+        - company_id
+        - value
+        - status
+        - pipeline_stage_id
+        - created_at
       properties:
         id:
           type: integer
         company_id:
           type: integer
+        value:
+          type: number
+        status:
+          type: string
+        pipeline_stage_id:
+          type: integer
+        created_at:
+          type: string
         value:
           type: number
         status:

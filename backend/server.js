@@ -7,9 +7,11 @@ const dotenv = require('dotenv');
 const winston = require('winston');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
-const reportRoutes = require('./routes/reportRoutes');
+// const reportRoutes = require('./routes/reportRoutes'); // Unused import removed
 const crudRoutes = require('./routes/crudAPI'); // Your CRUD routes
-// const pool = require('./routes/db'); // Adjust path if needed
+const YAML = require('yamljs');
+const middleware = require('./middleware'); // Import your middleware functions
+const authenticateToken = middleware.authenticateToken;
 
 dotenv.config();
 
@@ -29,17 +31,13 @@ const logger = winston.createLogger({
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
   logger.error('Unhandled Rejection:', reason);
 });
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  logger.error('Uncaught Exception:', error);
-});
-
 // Start server
 if (process.env.NODE_ENV !== 'test') {
-  console.log('Starting SalesBase API server...');
+  console.log('Starting SalesBase API server...'); 
   app.listen(PORT, () => {
     console.log(`🚀 SalesBase API server running on port ${PORT}`);
   });
@@ -124,21 +122,15 @@ app.post('/api/companies', authenticateToken, (req, res) => {
     companies.push(company);
     res.status(201).json(company);
 });
-app.get('/api/companies', (_, res) => {
+app.get('/api/companies', authenticateToken, (req, res) => {
     res.status(200).json({ companies });
 });
-app.get('/api/companies/:id', (req, res) => {
+app.get('/api/companies/:id', authenticateToken, (req, res) => {
     const company = companies.find(c => c.id == req.params.id);
     if (!company) return res.status(404).json({ message: "Company not found" });
     res.status(200).json(company);
 });
-app.put('/api/companies/:id', (req, res) => {
-    const index = companies.findIndex(c => c.id == req.params.id);
-    if (index === -1) return res.status(404).json({ message: "Company not found" });
-    companies[index] = { ...companies[index], ...req.body };
-    res.status(200).json(companies[index]);
-});
-app.delete('/api/companies/:id', (req, res) => {
+app.delete('/api/companies/:id', authenticateToken,(req, res) => {
     const index = companies.findIndex(c => c.id == req.params.id);
     if (index === -1) return res.status(404).json({ message: "Company not found" });
     companies.splice(index, 1);
@@ -148,7 +140,7 @@ app.delete('/api/companies/:id', (req, res) => {
 // Contacts API routes
 let contacts = [];
 let contactIdCounter = 1;
-app.post('/api/contacts', (req, res) => {
+app.post('/api/contacts', authenticateToken, (req, res) => {
     const { first_name, last_name, email, company_name } = req.body;
     if (!first_name || !last_name || !email) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -160,21 +152,15 @@ app.post('/api/contacts', (req, res) => {
     contacts.push(contact);
     res.status(201).json(contact);
 });
-app.get('/api/contacts', (_, res) => {
+app.get('/api/contacts', authenticateToken, (req, res) => {
     res.status(200).json({ contacts });
 });
-app.get('/api/contacts/:id', (req, res) => {
+app.get('/api/contacts/:id', authenticateToken, (req, res) => {
     const contact = contacts.find(c => c.id == req.params.id);
     if (!contact) return res.status(404).json({ message: "Contact not found" });
     res.status(200).json(contact);
 });
-app.put('/api/contacts/:id', (req, res) => {
-    const index = contacts.findIndex(c => c.id == req.params.id);
-    if (index === -1) return res.status(404).json({ message: "Contact not found" });
-    contacts[index] = { ...contacts[index], ...req.body };
-    res.status(200).json(contacts[index]);
-});
-app.delete('/api/contacts/:id', (req, res) => {
+app.delete('/api/contacts/:id', authenticateToken, (req, res) => {
     const index = contacts.findIndex(c => c.id == req.params.id);
     if (index === -1) return res.status(404).json({ message: "Contact not found" });
     contacts.splice(index, 1);
@@ -206,7 +192,7 @@ app.post('/api/auth/login', (req, res) => {
 // Deals API routes
 let deals = [];
 let dealIdCounter = 1;
-app.post('/api/deals', (req, res) => {
+app.post('/api/deals', authenticateToken, (req, res) => {
     const { company_id, value, status, pipeline_stage_id } = req.body;
     if (!company_id || !value || !status) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -215,21 +201,21 @@ app.post('/api/deals', (req, res) => {
     deals.push(deal);
     res.status(201).json(deal);
 });
-app.get('/api/deals', (_, res) => {
+app.get('/api/deals', authenticateToken,(_, res) => {
     res.status(200).json({ deals });
 });
-app.get('/api/deals/:id', (req, res) => {
+app.get('/api/deals/:id', authenticateToken,(req, res) => {
     const deal = deals.find(d => d.id == req.params.id);
     if (!deal) return res.status(404).json({ message: "Deal not found" });
     res.status(200).json(deal);
 });
-app.put('/api/deals/:id', (req, res) => {
+app.put('/api/deals/:id', authenticateToken,(req, res) => {
     const index = deals.findIndex(d => d.id == req.params.id);
     if (index === -1) return res.status(404).json({ message: "Deal not found" });
     deals[index] = { ...deals[index], ...req.body };
     res.status(200).json(deals[index]);
 });
-app.delete('/api/deals/:id', (req, res) => {
+app.delete('/api/deals/:id', authenticateToken, (req, res) => {
     const index = deals.findIndex(d => d.id == req.params.id);
     if (index === -1) return res.status(404).json({ message: "Deal not found" });
     deals.splice(index, 1);
@@ -237,21 +223,14 @@ app.delete('/api/deals/:id', (req, res) => {
 });
 
 // Reports API routes
-app.get('/api/reports', (_, res) => {
+app.get('/api/reports', authenticateToken, (req, res) => {
     const reports = [
         { id: 1, type: 'sales', name: 'Monthly Sales Report' },
         { id: 2, type: 'pipeline', name: 'Pipeline Analysis' }
     ];
     res.status(200).json({ reports });
 });
-app.get('/api/reports/export', (_, res) => {
-    res.setHeader('Content-Type', 'text/csv');
-    res.status(200).send('id,name,value\n1,Report 1,1000\n2,Report 2,2000');
-});
-
-// Leads API routes
-// Pipeline API routes
-app.get('/api/pipeline/analytics/overview', (_, res) => {
+app.get('/api/pipeline/analytics/overview', authenticateToken, (_, res) => {
     res.status(200).json({
         pipeline_stages: [
             { id: 1, name: 'Lead', count: 10, value: 50000 },
@@ -262,37 +241,7 @@ app.get('/api/pipeline/analytics/overview', (_, res) => {
         last_updated: new Date().toISOString()
     });
 });
-
-
-// Register reports routes first (must be before CRUD routes)
-app.use('/api/reports', reportRoutes);
-
-// Middleware to intercept /api/reports requests and prevent passing to CRUD router
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/reports')) {
-    // If no matching reports route, send this 404 to avoid CRUD router catching it
-    return res.status(404).json({
-      error: 'Route not found in reports router',
-      path: req.originalUrl,
-      method: req.method
-    });
-  }
-  next();
-});
-
-// Register CRUD routes for all other /api requests
-app.use('/api', crudRoutes);
-
-console.log('✅ CRUD routes registered');
-
-// Integrations API routes
-app.post('/api/integrations/webhooks/zapier', (req, res) => {
-    if (!req.body.event) {
-        return res.status(400).json({ message: "Missing required fields" });
-    }
-    res.status(200).json({ status: 'success', received: req.body });
-});
-app.post('/api/integrations/webhooks/slack', (req, res) => {
+app.post('/api/integrations/webhooks/slack', authenticateToken, (req, res) => {
     if (!req.body.text) {
         return res.status(400).json({ message: "Missing required fields" });
     }
@@ -305,8 +254,10 @@ try {
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
   console.log('✅ Swagger docs loaded');
 } catch (error) {
-  console.log('⚠️ Swagger docs not loaded (swagger.yaml not found)');
+  console.error('⚠️ Swagger docs not loaded:', error);
 }
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Global error handler
 app.use((error, _, res, __) => {
@@ -325,7 +276,7 @@ app.use((error, _, res, __) => {
   });
 });
 
-app.get('/', (req, res) => {
+app.get('/', authenticateToken, (_, res) => {
   res.json({
     message: 'Welcome to SalesBase API!',
     status: 'running',
@@ -333,8 +284,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 catch-all route
-app.use('*', (req, res) => {
-  logger.warn('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
+// Catch-all 404 handler for unmatched routes
+app.use((req, res) => {
+  res.json({
+    message: 'Welcome to SalesBase API!',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+}), 
+
   res.status(404).json({ error: 'Route not found', path: req.originalUrl, method: req.method });
 });

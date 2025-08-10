@@ -16,8 +16,31 @@
     "scheduler": "node scheduler.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+  "node": "20.x"
+},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/salesbase-backend.git"
   },
+  "license": "MIT",
+  "author": "KyJahn Smith",
+  "keywords": [
+    "CRM",
+    "API",
+    "Node.js",
+    "Express",
+    "PostgreSQL",
+    "Redis",
+    "Docker",
+    "Swagger",
+    "Jest",
+    "Babel",
+    "TailwindCSS",
+    "PDF",
+    "Excel",
+    "Email",
+    "Authentication"
+  ],
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
