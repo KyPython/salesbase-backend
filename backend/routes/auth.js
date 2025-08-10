@@ -218,4 +218,9 @@ router.put('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+// Add to your auth route file
+router.get('/login', (req, res) => {
+  res.json({ message: 'Login route is POST only.' });
+});
+
 module.exports = router;
