@@ -1,3 +1,6 @@
+// filepath: /Users/ky/Desktop/GitHub/VS_Code/SalesBase/salesbase-backend/backend/server.js
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+
 const dotenv = require('dotenv');
 dotenv.config();
 
