@@ -28,8 +28,18 @@ const logger = winston.createLogger({
   transports: [new winston.transports.Console({ format: winston.format.simple() })]
 });
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+  logger.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception:', error);
+});
+
 // Start server
 if (process.env.NODE_ENV !== 'test') {
+  console.log('Starting SalesBase API server...');
   app.listen(PORT, () => {
     console.log(`🚀 SalesBase API server running on port ${PORT}`);
   });
