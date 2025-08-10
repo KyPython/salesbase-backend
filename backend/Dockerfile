@@ -1,7 +1,13 @@
 # backend/Dockerfile
 FROM node:18-alpine
 
-WORKDIR /app
+WORKDIR /backend
+
+COPY . .
+RUN apk add --no-cache git
+RUN npm install -g npm@latest
+RUN npm install -g nodemon@latest
+RUN npm install -g pm2@latest
 
 COPY package*.json ./
 
