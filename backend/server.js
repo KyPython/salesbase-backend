@@ -65,7 +65,8 @@ process.on('uncaughtException', (error) => {
 const allowedOrigins = [
   'http://localhost:3000',
   'https://salesbase-frontend.vercel.app',
-  'https://salesbase-backend.onrender.com'
+  'https://salesbase-backend.onrender.com',
+  'https://salesbase-frontend-qhm9pz19v-kypythons-projects.vercel.app' // <-- Add this line
 ];
 
 const corsOptions = {
