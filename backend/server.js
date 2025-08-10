@@ -163,6 +163,14 @@ app.use((req, res) => {
   });
 });
 
+// CORS error handler (add BEFORE global error handler)
+app.use((err, req, res, next) => {
+  if (err && err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS Error', message: err.message });
+  }
+  next(err);
+});
+
 // Global error handler
 app.use((error, _, res, __) => {
   logger.error('Unhandled error:', error);
