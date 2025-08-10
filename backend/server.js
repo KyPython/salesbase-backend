@@ -328,5 +328,3 @@ app.use('*', (req, res) => {
   logger.warn('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
   res.status(404).json({ error: 'Route not found', path: req.originalUrl, method: req.method });
 });
-
-module.exports = app;
