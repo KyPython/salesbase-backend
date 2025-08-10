@@ -1,3 +1,21 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const winston = require('winston');
+const path = require('path');
+const swaggerUi = require('swagger-ui-express');
+const crudRoutes = require('./routes/crudAPI');
+const YAML = require('yamljs');
+const middleware = require('./middleware');
+const authenticateToken = middleware.authenticateToken;
+
+const PORT = process.env.PORT || 3001;
+
 console.log(`Starting server on port ${PORT}`);
 console.log('Starting SalesBase API...');
 console.log('PORT:', process.env.PORT);
@@ -14,24 +32,7 @@ console.log('RATE_LIMIT_WINDOW_MS:', process.env.RATE_LIMIT_WINDOW_MS);
 console.log('RATE_LIMIT_MAX_REQUESTS:', process.env.RATE_LIMIT_MAX_REQUESTS);
 console.log('LOG_LEVEL:', process.env.LOG_LEVEL);
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
-const winston = require('winston');
-const path = require('path');
-const swaggerUi = require('swagger-ui-express');
-const crudRoutes = require('./routes/crudAPI');
-const YAML = require('yamljs');
-const middleware = require('./middleware');
-const authenticateToken = middleware.authenticateToken;
-
-dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Logger setup
 const logger = winston.createLogger({
