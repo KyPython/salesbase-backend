@@ -15,6 +15,13 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+// Start server
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
+    console.log(`🚀 SalesBase API server running on port ${PORT}`);
+  });
+}
 
 // Logger setup
 const logger = winston.createLogger({
@@ -308,13 +315,5 @@ app.use('*', (req, res) => {
   console.log('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
   res.status(404).json({ error: 'Route not found', path: req.originalUrl, method: req.method });
 });
-
-// Start server
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
-    console.log(`🚀 SalesBase API server running on port ${PORT}`);
-  });
-}
 
 module.exports = app;
