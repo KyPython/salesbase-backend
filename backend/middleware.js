@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const pool = require('./database.js');
-const auditService = require('./services/auditService');
+const auditService = require('./services/auditService.js');
 
 // Hash password
 const hashPassword = async (password) => {
