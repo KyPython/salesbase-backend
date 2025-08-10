@@ -15,13 +15,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-// Start server
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
-    console.log(`🚀 SalesBase API server running on port ${PORT}`);
-  });
-}
 
 // Logger setup
 const logger = winston.createLogger({
@@ -34,6 +27,18 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'salesbase-api' },
   transports: [new winston.transports.Console({ format: winston.format.simple() })]
 });
+
+// Start server
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 SalesBase API server running on port ${PORT}`);
+  });
+} else {
+  app.listen(PORT, () => {
+    logger.info(`🚀 SalesBase API server running on port ${PORT}`);
+    console.log(`🚀 SalesBase API server running on port ${PORT}`);
+  });
+}
 
 const allowedOrigins = [
   'http://localhost:3000',
