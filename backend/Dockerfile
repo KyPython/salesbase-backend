@@ -7,5 +7,8 @@ RUN npm install
 
 COPY . .
 
-CMD ["node", "server.js"]
 EXPOSE 10000
+
+CMD ["node", "server.js"]
+# Use environment variables for production settings
+# e.g., CMD ["sh", "-c", "NODE_ENV=production node server.js
