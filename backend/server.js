@@ -315,9 +315,17 @@ app.use((error, _, res, __) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to SalesBase API!',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 404 catch-all route
 app.use('*', (req, res) => {
-  console.log('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
+  logger.warn('🚨 404 - Route not found:', req.method, req.originalUrl, 'Body:', req.body, 'Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
   res.status(404).json({ error: 'Route not found', path: req.originalUrl, method: req.method });
 });
 
