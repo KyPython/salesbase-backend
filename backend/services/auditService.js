@@ -3,7 +3,7 @@
  * 
  * This service handles recording user actions for audit purposes.
  */
-const db = require('../database');
+const db = require('../db');
 
 /**
  * Creates an audit log entry
