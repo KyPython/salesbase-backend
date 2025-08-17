@@ -39,22 +39,78 @@ console.log('LOG_LEVEL:', process.env.LOG_LEVEL);
 
 const app = express();
 
+// Define CORS configuration first
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://salesbase-frontend.vercel.app',
+  'https://salesbase-backend.onrender.com',
+  'https://salesbase-frontend-qhm9pz19v-kypythons-projects.vercel.app',
+  'https://salesbase-frontend-cgf6861l9-kypythons-projects.vercel.app',
+  'https://salesbase-frontend-p1ugxusr3-kypythons-projects.vercel.app'
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log('CORS check for origin:', origin);
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Vercel preview deployments
+    if (origin.includes('vercel.app')) {
+      console.log('Vercel origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    // Check specific allowed origins
+    if (allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('Origin blocked:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
+
+// Import all route modules
 const contactsRoutes = require('./routes/contacts');
 const pipelineAnalyticsRoutes = require('./routes/pipelineAnalytics');
 const salesPerformanceRoutes = require('./routes/salesPerformance');
+const companiesRoutes = require('./routes/companies');
+const dealsRoutes = require('./routes/deals');
+const integrationsRoutes = require('./routes/integrations');
+const reportRoutes = require('./routes/reportRoutes');
+const userSettingsRoutes = require('./routes/userSettings');
 
+// Apply CORS before any routes
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+
+// Apply middleware
+app.use(helmet());
+app.use(compression());
+app.use(rateLimit({ windowMs: 60000, max: 1000 }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Register all API routes with proper prefixes
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/pipeline/analytics', pipelineAnalyticsRoutes);
 app.use('/api/sales-performance', salesPerformanceRoutes);
-app.use('/auth', require('./routes/auth'));
-app.use('/crud', crudRoutes);
-app.use('/contacts', require('./routes/contacts'));
-app.use('/pipeline', require('./routes/pipelineAnalytics'));
-app.use('/sales-performance', require('./routes/salesPerformance'));
-app.use('/auth', authRoutes);
-app.use('/companies', require('./routes/companies'));
-app.use('/deals', require('./routes/deals'));
-app.use('/integrations', require('./routes/integrations'));
+app.use('/api/auth', authRoutes);
+app.use('/api/companies', companiesRoutes);
+app.use('/api/deals', dealsRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/crud', crudRoutes);
 
 // Logger setup
 const logger = winston.createLogger({
@@ -80,41 +136,6 @@ process.on('uncaughtException', (error) => {
     process.exit(1);
   }
 });
-
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://salesbase-frontend.vercel.app',
-  'https://salesbase-backend.onrender.com',
-  'https://salesbase-frontend-qhm9pz19v-kypythons-projects.vercel.app' // <-- Add this line
-];
-
-app.use((req, res, next) => {
-  console.log('CORS Origin:', req.headers.origin);
-  next();
-});
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
-
-app.use(helmet());
-app.use(compression());
-app.use(rateLimit({ windowMs: 60000, max: 1000 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
 
 app.use((req, _, next) => {
   console.log('>>> Incoming request:', req.method, req.originalUrl);
@@ -158,16 +179,6 @@ try {
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Import and use other routes
-app.use('/api/crud', crudRoutes);
-const companiesRoutes = require('./routes/companies');
-const dealsRoutes = require('./routes/deals');
-const integrationsRoutes = require('./routes/integrations');
-app.use('/api/auth', authRoutes);
-app.use('/api/companies', companiesRoutes);
-app.use('/api/deals', dealsRoutes);
-app.use('/api/integrations', integrationsRoutes);
 
 // Root route (public)
 app.get('/', (_, res) => {
