@@ -45,6 +45,17 @@ const salesPerformanceRoutes = require('./routes/salesPerformance');
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/pipeline/analytics', pipelineAnalyticsRoutes);
 app.use('/api/sales-performance', salesPerformanceRoutes);
+app.use('/auth', require('./routes/auth'));
+app.use('/crud', crudRoutes);
+app.use('/contacts', require('./routes/contacts'));
+app.use('/pipeline', require('./routes/pipelineAnalytics'));
+app.use('/sales-performance', require('./routes/salesPerformance'));
+app.use('/auth/register', require('./routes/authRegister'));
+app.use('/auth/profile', require('./routes/authProfile'));
+app.use('/auth/change-password', require('./routes/authChangePassword'));
+app.use('/companies', require('./routes/companies'));
+app.use('/deals', require('./routes/deals'));
+app.use('/integrations', require('./routes/integrations'));
 
 // Logger setup
 const logger = winston.createLogger({
