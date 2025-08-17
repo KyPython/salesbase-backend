@@ -1,5 +1,5 @@
 const express = require('express');
-const pool = require('./db');
+const pool = require('../db');
 const router = express.Router();
 
 // filepath: /Users/ky/Desktop/GitHub/VS_Code/SalesBase/backend/routes/contacts.js

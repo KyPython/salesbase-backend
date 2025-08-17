@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const Joi = require('joi');
-const pool = require('../db'); // adjust path as needed
+const pool = require('../db');
 
 const router = express.Router();
 
