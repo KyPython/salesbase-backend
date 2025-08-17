@@ -50,7 +50,6 @@ app.use('/crud', crudRoutes);
 app.use('/contacts', require('./routes/contacts'));
 app.use('/pipeline', require('./routes/pipelineAnalytics'));
 app.use('/sales-performance', require('./routes/salesPerformance'));
-const authRoutes = require('./routes/auth');
 app.use('/auth', authRoutes);
 app.use('/auth/change-password', require('./routes/authChangePassword'));
 app.use('/companies', require('./routes/companies'));
