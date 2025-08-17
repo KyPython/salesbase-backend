@@ -1,6 +1,6 @@
 const express = require('express');
 const Joi = require('joi');
-const pool = require('../database.js');
+const pool = require('../db.js');
 const middleware = require('../middleware.js');
 const generateToken = middleware.generateToken;
 const hashPassword = middleware.hashPassword;

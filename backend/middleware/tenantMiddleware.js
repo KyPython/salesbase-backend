@@ -5,7 +5,7 @@
  * This allows hosting multiple customers on the same infrastructure while
  * keeping their data separate.
  */
-const pool = require('../database');
+const pool = require('../db');
 
 /**
  * Tenant service for managing tenants in the system
