@@ -1,5 +1,5 @@
 const express = require('express');
-const pool = require('../routes/db');
+const pool = require('./routes/db');
 const router = express.Router();
 
 // GET /api/pipeline/analytics/overview
