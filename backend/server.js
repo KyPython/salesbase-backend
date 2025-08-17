@@ -52,7 +52,6 @@ app.use('/contacts', require('./routes/contacts'));
 app.use('/pipeline', require('./routes/pipelineAnalytics'));
 app.use('/sales-performance', require('./routes/salesPerformance'));
 app.use('/auth', authRoutes);
-app.use('/auth/change-password', require('./routes/authChangePassword'));
 app.use('/companies', require('./routes/companies'));
 app.use('/deals', require('./routes/deals'));
 app.use('/integrations', require('./routes/integrations'));
