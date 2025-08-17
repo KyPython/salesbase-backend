@@ -5,8 +5,8 @@ const winston = require('winston');
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // required for Render hosted Postgres
-  },
+    rejectUnauthorized: false // required for Render
+  }
 });
 
 const logger = winston.createLogger({

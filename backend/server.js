@@ -17,6 +17,7 @@ const crudRoutes = require('./routes/crudAPI');
 const YAML = require('yamljs');
 const middleware = require('./middleware');
 const authenticateToken = middleware.authenticateToken;
+const authRoutes = require('./routes/auth');
 
 const PORT = process.env.PORT || 3001;
 
@@ -161,7 +162,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Import and use other routes
 app.use('/api/crud', crudRoutes);
-const authRoutes = require('./routes/auth');
 const companiesRoutes = require('./routes/companies');
 const dealsRoutes = require('./routes/deals');
 const integrationsRoutes = require('./routes/integrations');
