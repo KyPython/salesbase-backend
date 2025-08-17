@@ -1,8 +1,9 @@
 // filepath: /Users/ky/Desktop/GitHub/VS_Code/SalesBase/salesbase-backend/backend/server.js
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
 
 const dotenv = require('dotenv');
 dotenv.config();
+
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
 
 const express = require('express');
 const cors = require('cors');
@@ -36,6 +37,14 @@ console.log('RATE_LIMIT_MAX_REQUESTS:', process.env.RATE_LIMIT_MAX_REQUESTS);
 console.log('LOG_LEVEL:', process.env.LOG_LEVEL);
 
 const app = express();
+
+const contactsRoutes = require('./routes/contacts');
+const pipelineAnalyticsRoutes = require('./routes/pipelineAnalytics');
+const salesPerformanceRoutes = require('./routes/salesPerformance');
+
+app.use('/api/contacts', contactsRoutes);
+app.use('/api/pipeline/analytics', pipelineAnalyticsRoutes);
+app.use('/api/sales-performance', salesPerformanceRoutes);
 
 // Logger setup
 const logger = winston.createLogger({

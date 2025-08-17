@@ -16,11 +16,11 @@
     "scheduler": "node scheduler.js"
   },
   "engines": {
-  "node": "20.x"
-},
+    "node": "20.x"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/salesbase-backend.git"
+    "url": "https://github.com/KyPython/salesbase-backend.git"
   },
   "license": "MIT",
   "author": "KyJahn Smith",
